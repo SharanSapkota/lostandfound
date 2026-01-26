@@ -1,8 +1,11 @@
 # PWP SPRING 2026
 # LOST AND FOUND
 # Group information
-* Student 1: Name: Ram Sharan Sapkota  Email: Ram.Sapkota@student.oulu.fi
-* Student 2. Name: Sujith Srinivasan Email: Sujith.Srinivasan@student.oulu.fi
+- **Student 1:** Ram Sharan Sapkota  
+  **Email:** Ram.Sapkota@student.oulu.fi  
+
+- **Student 2:** Sujith Srinivasan  
+  **Email:** Sujith.Srinivasan@student.oulu.fi  
 
 
 
