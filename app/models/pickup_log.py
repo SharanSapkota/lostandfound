@@ -14,24 +14,24 @@ class PickupLog(Base):
         Integer,
         ForeignKey("claim_requests.id"),
         nullable=False,
-        ondelete="CASCADE",
-        unique=True
+        unique=True,
+        ondelete="CASCADE"
     )
 
-    item_id = Column(Integer, ForeignKey("found_items.id"), nullable=False)
     claimant_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     verified_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     counter_number = Column(String, nullable=True)
     pickup_code = Column(String, nullable=True)
-
     picked_up_at = Column(DateTime, nullable=False)
     remarks = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    claim_request = relationship("ClaimRequest", back_populates="pickup_log")
-    item = relationship("FoundItem")
+    claim_request = relationship(
+        "ClaimRequest",
+        back_populates="pickup_log"
+    )
 
     claimant = relationship("User", foreign_keys=[claimant_id])
     verified_by_admin = relationship("User", foreign_keys=[verified_by_admin_id])
