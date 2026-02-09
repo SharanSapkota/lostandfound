@@ -25,7 +25,8 @@ The database stores Users, Found Items, Claim Requests, and Pickup Logs using SQ
 - FastAPI  
 - SQLAlchemy  
 - SQLite  
-- Pydantic  
+- Pydantic
+- alembic  
 
 ---
 
@@ -35,9 +36,6 @@ The database stores Users, Found Items, Claim Requests, and Pickup Logs using SQ
 - Tables are created automatically using SQLAlchemy models.
 
 To create tables and run the app:
-```bash
-uvicorn app.main:app --reload
-
 
 ## Installation
 
@@ -56,5 +54,15 @@ venv\Scripts\activate
 ## Installation dependencies
 
 pip install -r requirements.txt
+
+# Create initial migration (first time only)
+alembic revision --autogenerate -m "initial tables"
+
+# Apply migration to create tables
+alembic upgrade head
+
+uvicorn app.main:app --reload
+
+
 
 
