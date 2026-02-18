@@ -24,7 +24,7 @@ The database stores Users, Found Items, Claim Requests, and Pickup Logs using SQ
 - Python 3.x  
 - FastAPI  
 - SQLAlchemy  
-- SQLite  
+- Postgres  
 - Pydantic
 - alembic  
 
