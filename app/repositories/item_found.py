@@ -19,5 +19,8 @@ class UserFoundRepository:
         self.db.commit()
         self.db.refresh(found_item)
         return found_item
+    
+    def get_all(self) -> list[FoundItem]:
+        return self.db.query(FoundItem).all()
 
     
