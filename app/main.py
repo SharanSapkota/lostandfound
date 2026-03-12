@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from app.routers.userRouter import router as user_router
-from app.routers.foundItemRouter import router as item_router
-from app.routers.claimRouter import router as claim_router
-from app.routers.pickupRouter import router as pickup_router
+from app.routers.found_item_router import router as item_router
+from app.routers.claim_router import router as claim_router
+from app.routers.pickup_router import router as pickup_router
 
 app = FastAPI(title="OuluFind API", version="1.0.0")
 
