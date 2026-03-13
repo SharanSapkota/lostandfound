@@ -1,4 +1,3 @@
-# app/routers/claimRouter.py
 
 from fastapi import APIRouter, Depends
 from app.controllers.claim_controller import (
@@ -8,7 +7,7 @@ from app.controllers.claim_controller import (
     update_claim,
     delete_claim,
 )
-from lostAndFound.app.dependencies.auth_dependency import require_auth, require_admin
+from app.dependencies.auth_dependency import require_auth, require_admin
 
 router = APIRouter(tags=["Claims"])
 

@@ -1,12 +1,9 @@
-# app/dependencies/pickupDependency.py
-
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.repositories.pickup_repository import PickupLogRepository
 from app.repositories.claim_repository import ClaimRepository
 from app.services.pickup_service import PickupLogService
-
 
 def get_pickup_service(db: Session = Depends(get_db)) -> PickupLogService:
     pickupRepository = PickupLogRepository(db)

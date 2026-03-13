@@ -1,7 +1,7 @@
 # app/controllers/foundItemController.py
 
 from fastapi import Depends, HTTPException
-from app.schemas.found_item_schema import FoundItemCreate, FoundItemUpdate, FoundItemResponse
+from app.schemas.found_item_schema import FoundItemCreate, FoundItemResponse
 from app.services.found_item_service import FoundItemService
 from app.dependencies.found_item_dependency import get_item_service
 from app.dependencies.auth_dependency import require_auth
@@ -44,7 +44,7 @@ def create_item(
 
 def update_item(
     item_id: int,
-    payload: FoundItemUpdate,
+    payload: FoundItemCreate,
     current_user: dict = Depends(require_auth),
     service: FoundItemService = Depends(get_item_service),
 ):

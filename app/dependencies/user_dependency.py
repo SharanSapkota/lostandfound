@@ -1,6 +1,11 @@
-from lostAndFound.app.services.user_service import UserService
-from lostAndFound.app.repositories.user_repository import UserRepository
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.repositories.user_repository import UserRepository
+from app.services.user_service import UserService
 
-def userServiceRepoInjected():
-    userRepository = UserRepository()
-    return UserService(userRepository)
+
+def get_user_service(db: Session = Depends(get_db)) -> UserService:
+    user_repository = UserRepository(db)
+    return UserService(user_repository)
+

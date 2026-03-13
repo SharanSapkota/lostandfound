@@ -1,5 +1,3 @@
-# app/routers/foundItemRouter.py
-
 from fastapi import APIRouter, Depends
 from app.controllers.found_item_controller import (
     get_all_items,
@@ -8,7 +6,7 @@ from app.controllers.found_item_controller import (
     update_item,
     delete_item,
 )
-from lostAndFound.app.dependencies.auth_dependency import require_auth, require_admin
+from app.dependencies.auth_dependency import require_auth, require_admin
 
 router = APIRouter(prefix="/items", tags=["Found Items"])
 

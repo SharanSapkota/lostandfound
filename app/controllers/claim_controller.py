@@ -1,6 +1,6 @@
 
 from fastapi import Depends, HTTPException
-from app.schemas.claim_schema import ClaimCreate, ClaimUpdate, ClaimResponse
+from app.schemas.claim_schema import ClaimRequestCreate, ClaimRequestResponse
 from app.services.claim_service import ClaimService
 from app.dependencies.claim_dependency import get_claim_service
 from app.dependencies.auth_dependency import require_auth, require_admin
@@ -20,7 +20,7 @@ def get_claims_for_item(
 
 def create_claim(
     item_id: int,
-    payload: ClaimCreate,
+    payload: ClaimRequestCreate,
     current_user: dict = Depends(require_auth),
     service: ClaimService = Depends(get_claim_service),
 ):
@@ -53,7 +53,7 @@ def get_claim(
 
 def update_claim(
     claim_id: int,
-    payload: ClaimUpdate,
+    payload: ClaimRequestCreate,
     current_user: dict = Depends(require_admin),
     service: ClaimService = Depends(get_claim_service),
 ):

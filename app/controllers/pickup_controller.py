@@ -1,11 +1,10 @@
 # app/controllers/pickupController.py
 
 from fastapi import Depends, HTTPException
-from lostAndFound.app.schemas.pickup_schema import PickupLogCreate, PickupLogResponse
+from app.schemas.pickup_schema import PickupLogCreate, PickupLogResponse
 from app.services.pickup_service import PickupLogService
 from app.dependencies.pickup_dependency import get_pickup_service
-from lostAndFound.app.dependencies.auth_dependency import require_admin
-
+from app.dependencies.auth_dependency import require_admin
 
 def get_all_pickups(
     _: dict = Depends(require_admin),

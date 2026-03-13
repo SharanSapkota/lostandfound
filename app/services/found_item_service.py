@@ -1,14 +1,15 @@
 from app.repositories.found_item_repository import FoundItemRepository
-from app.schemas.found_item_schema import FoundItem 
+from app.schemas.found_item_schema import FoundItemResponse 
+from datetime import datetime
 
 class FoundItemService:
     def __init__(self, repo: FoundItemRepository):
         self.repo = repo
 
-    def get_all(self) -> list[FoundItem]:
+    def get_all(self) -> list[FoundItemResponse]:
         return self.repo.get_all()
 
-    def get_by_id(self, item_id: int) -> FoundItem:
+    def get_by_id(self, item_id: int) -> FoundItemResponse:
         item = self.repo.get_by_id(item_id)
         if not item:
             raise ValueError("Item not found")
@@ -16,8 +17,8 @@ class FoundItemService:
 
     def create(self, reported_by: int, title: str, description: str = None,
                category: str = None, location_found: str = None,
-               date_found: datetime = None, image_url: str = None) -> FoundItem:
-        item = FoundItem(
+               date_found: datetime = None, image_url: str = None) -> FoundItemResponse:
+        item = FoundItemResponse(
             title=title,
             description=description,
             category=category,
@@ -28,7 +29,7 @@ class FoundItemService:
         )
         return self.repo.create(item)
 
-    def update(self, item_id: int, **kwargs) -> FoundItem:
+    def update(self, item_id: int, **kwargs) -> FoundItemResponse:
         item = self.repo.get_by_id(item_id)
         if not item:
             raise ValueError("Item not found")

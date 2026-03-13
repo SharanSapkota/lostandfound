@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.controllers.userController import (
+from app.controllers.user_controller import (
     register,
     login,
     get_all_users,
@@ -7,7 +7,7 @@ from app.controllers.userController import (
     update_user,
     delete_user,
 )
-from app.dependencies.authDependency import require_auth, require_admin
+from app.dependencies.auth_dependency import require_auth, require_admin
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
