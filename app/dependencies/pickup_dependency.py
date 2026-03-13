@@ -9,3 +9,4 @@ def get_pickup_service(db: Session = Depends(get_db)) -> PickupLogService:
     pickupRepository = PickupLogRepository(db)
     claimRepository = ClaimRepository(db)
     return PickupLogService(pickupRepository, claimRepository)
+
