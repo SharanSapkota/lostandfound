@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
-
 class ClaimRequestCreate(BaseModel):
     item_id: int
     proof_details: str
