@@ -1,0 +1,1338 @@
+openapi: 3.0.3
+info:
+  title: University Lost and Found API
+  description: >
+    REST API for managing lost and found items at the university.
+    Users can report found items, submit claim requests, and admins
+    can approve or reject claims and log pickups.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Users
+    description: User registration, authentication, and management
+  - name: Found Items
+    description: Reporting and browsing found items
+  - name: Claims
+    description: Submitting and managing claim requests
+  - name: Pickup Logs
+    description: Admin-only pickup confirmation logs
+
+
+paths:
+#-------------------------- USERS -----------------------
+
+  /users/register:
+    post:
+      tags: [Users]
+      summary: Register a new user
+      description: Create a new user account. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            examples:
+              typical:
+                summary: Standard registration
+                value:
+                  email: alice@university.fi
+                  firstName: Alice
+                  lastName: Mäkinen
+                  password: secret123
+                  phone: "+358401234567"
+              no_phone:
+                summary: Registration without phone
+                value:
+                  email: bob@university.fi
+                  firstName: Bob
+                  lastName: Virtanen
+                  password: pass456
+                  phone: null
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                id: 1
+                email: alice@university.fi
+                firstName: Alice
+                lastName: Mäkinen
+                phone: "+358401234567"
+                role: user
+                is_active: true
+                created_at: "2024-04-01T10:00:00"
+                updated_at: "2024-04-01T10:00:00"
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/login:
+    post:
+      tags: [Users]
+      summary: Login and receive a JWT token
+      description: Authenticate with email and password. Returns a Bearer token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+            example:
+              email: alice@university.fi
+              password: secret123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoidXNlciJ9.abc123
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/:
+    get:
+      tags: [Users]
+      summary: Get all users
+      description: Returns a list of all registered users. Admin only.
+      responses:
+        '200':
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+              examples:
+                multiple_users:
+                  summary: Multiple users
+                  value:
+                    - id: 1
+                      email: alice@university.fi
+                      firstName: Alice
+                      lastName: Mäkinen
+                      phone: "+358401234567"
+                      role: user
+                      is_active: true
+                      created_at: "2024-04-01T10:00:00"
+                      updated_at: "2024-04-01T10:00:00"
+                    - id: 2
+                      email: admin@university.fi
+                      firstName: Admin
+                      lastName: User
+                      phone: null
+                      role: admin
+                      is_active: true
+                      created_at: "2024-03-01T08:00:00"
+                      updated_at: "2024-03-01T08:00:00"
+                empty:
+                  summary: No users yet
+                  value: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{user_id}:
+    get:
+      tags: [Users]
+      summary: Get a user by ID
+      description: Returns a single user. Must be the same user or admin.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                regular_user:
+                  summary: Regular user
+                  value:
+                    id: 1
+                    email: alice@university.fi
+                    firstName: Alice
+                    lastName: Mäkinen
+                    phone: "+358401234567"
+                    role: user
+                    is_active: true
+                    created_at: "2024-04-01T10:00:00"
+                    updated_at: "2024-04-01T10:00:00"
+                admin_user:
+                  summary: Admin user
+                  value:
+                    id: 2
+                    email: admin@university.fi
+                    firstName: Admin
+                    lastName: Staff
+                    phone: null
+                    role: admin
+                    is_active: true
+                    created_at: "2024-03-01T08:00:00"
+                    updated_at: "2024-03-01T08:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Users]
+      summary: Update a user
+      description: Update user profile. Must be the same user.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            example:
+              email: alice@university.fi
+              firstName: Alice
+              lastName: Korhonen
+              password: newpassword
+              phone: "+358409999999"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                id: 1
+                email: alice@university.fi
+                firstName: Alice
+                lastName: Korhonen
+                phone: "+358409999999"
+                role: user
+                is_active: true
+                created_at: "2024-04-01T10:00:00"
+                updated_at: "2024-04-05T12:30:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Users]
+      summary: Delete a user
+      description: Delete a user account. Must be the same user or admin.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # FOUND ITEMS
+  /items/:
+    get:
+      tags: [Found Items]
+      summary: Get all found items
+      description: Returns all reported found items. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: List of found items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoundItemResponse'
+              examples:
+                with_items:
+                  summary: Items available
+                  value:
+                    - id: 1
+                      title: Blue Backpack
+                      description: Found near the library entrance
+                      category: Bags
+                      location_found: Main Library
+                      date_found: "2024-04-01T09:00:00"
+                      image_url: "https://cdn.example.com/images/backpack.jpg"
+                      status: available
+                      reported_by: 3
+                      created_at: "2024-04-01T10:00:00"
+                      updated_at: "2024-04-01T10:00:00"
+                    - id: 2
+                      title: Student ID Card
+                      description: null
+                      category: Documents
+                      location_found: Cafeteria
+                      date_found: "2024-04-02T12:00:00"
+                      image_url: null
+                      status: claimed
+                      reported_by: 4
+                      created_at: "2024-04-02T13:00:00"
+                      updated_at: "2024-04-03T09:00:00"
+                empty:
+                  summary: No items yet
+                  value: []
+
+    post:
+      tags: [Found Items]
+      summary: Report a new found item
+      description: Submit a new found item. Requires authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FoundItemCreateRequest'
+            examples:
+              with_image:
+                summary: Item with image
+                value:
+                  title: Blue Backpack
+                  description: Found near the library entrance, contains some books
+                  category: Bags
+                  location_found: Main Library
+                  date_found: "2024-04-01T09:00:00"
+                  image_url: "https://cdn.example.com/images/backpack.jpg"
+              without_image:
+                summary: Item without image
+                value:
+                  title: Student ID Card
+                  description: null
+                  category: Documents
+                  location_found: Cafeteria
+                  date_found: "2024-04-02T12:00:00"
+                  image_url: null
+      responses:
+        '201':
+          description: Found item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoundItemResponse'
+              example:
+                id: 1
+                title: Blue Backpack
+                description: Found near the library entrance
+                category: Bags
+                location_found: Main Library
+                date_found: "2024-04-01T09:00:00"
+                image_url: "https://cdn.example.com/images/backpack.jpg"
+                status: available
+                reported_by: 3
+                created_at: "2024-04-01T10:00:00"
+                updated_at: "2024-04-01T10:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /items/{item_id}:
+    get:
+      tags: [Found Items]
+      summary: Get a found item by ID
+      description: Returns a single found item. Public endpoint.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: Found item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoundItemResponse'
+              examples:
+                available_with_image:
+                  summary: Available item with image
+                  value:
+                    id: 1
+                    title: Blue Backpack
+                    description: Found near the library entrance
+                    category: Bags
+                    location_found: Main Library
+                    date_found: "2024-04-01T09:00:00"
+                    image_url: "https://cdn.example.com/images/backpack.jpg"
+                    status: available
+                    reported_by: 3
+                    created_at: "2024-04-01T10:00:00"
+                    updated_at: "2024-04-01T10:00:00"
+                claimed_no_image:
+                  summary: Claimed item without image
+                  value:
+                    id: 2
+                    title: Student ID Card
+                    description: null
+                    category: Documents
+                    location_found: Cafeteria
+                    date_found: "2024-04-02T12:00:00"
+                    image_url: null
+                    status: claimed
+                    reported_by: 4
+                    created_at: "2024-04-02T13:00:00"
+                    updated_at: "2024-04-03T09:00:00"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Found Items]
+      summary: Update a found item
+      description: Update item details. Must be the reporter or admin.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FoundItemCreateRequest'
+            example:
+              title: Blue Backpack (Large)
+              description: Updated description after closer inspection
+              category: Bags
+              location_found: Main Library, Floor 2
+              date_found: "2024-04-01T09:00:00"
+              image_url: "https://cdn.example.com/images/backpack_updated.jpg"
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoundItemResponse'
+              example:
+                id: 1
+                title: Blue Backpack (Large)
+                description: Updated description after closer inspection
+                category: Bags
+                location_found: Main Library, Floor 2
+                date_found: "2024-04-01T09:00:00"
+                image_url: "https://cdn.example.com/images/backpack_updated.jpg"
+                status: available
+                reported_by: 3
+                created_at: "2024-04-01T10:00:00"
+                updated_at: "2024-04-05T14:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Found Items]
+      summary: Delete a found item
+      description: Delete a found item. Must be the reporter or admin.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '204':
+          description: Item deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------- CLAIMS -----------------------
+  /items/{item_id}/claims:
+    get:
+      tags: [Claims]
+      summary: Get all claims for an item
+      description: Returns all claim requests for a specific found item. Admin only.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: List of claims for the item
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClaimResponse'
+              examples:
+                multiple_claims:
+                  summary: Multiple claims pending
+                  value:
+                    - id: 1
+                      item_id: 1
+                      claimant_id: 2
+                      admin_id: null
+                      proof_details: This is my bag, it has my laptop inside
+                      proof_image_url: "https://cdn.example.com/proofs/proof1.jpg"
+                      status: pending
+                      admin_note: null
+                      pickup_code: null
+                      counter_number: null
+                      approved_at: null
+                      created_at: "2024-04-02T08:00:00"
+                      updated_at: "2024-04-02T08:00:00"
+                    - id: 2
+                      item_id: 1
+                      claimant_id: 5
+                      admin_id: null
+                      proof_details: I lost a blue backpack yesterday
+                      proof_image_url: null
+                      status: pending
+                      admin_note: null
+                      pickup_code: null
+                      counter_number: null
+                      approved_at: null
+                      created_at: "2024-04-02T09:00:00"
+                      updated_at: "2024-04-02T09:00:00"
+                empty:
+                  summary: No claims yet
+                  value: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Claims]
+      summary: Submit a claim for a found item
+      description: Create a new claim request for a found item. Requires authentication.
+      parameters:
+        - $ref: '#/components/parameters/ItemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimCreateRequest'
+            examples:
+              with_proof_image:
+                summary: Claim with proof image
+                value:
+                  proof_details: This is my backpack. It has a red keychain attached and my laptop inside.
+                  proof_image_url: "https://cdn.example.com/proofs/my_bag_receipt.jpg"
+              without_proof_image:
+                summary: Claim without image
+                value:
+                  proof_details: I lost my student ID card at the cafeteria on Monday afternoon.
+                  proof_image_url: null
+      responses:
+        '201':
+          description: Claim submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+              example:
+                id: 1
+                item_id: 1
+                claimant_id: 2
+                admin_id: null
+                proof_details: This is my backpack. It has a red keychain attached.
+                proof_image_url: "https://cdn.example.com/proofs/my_bag_receipt.jpg"
+                status: pending
+                admin_note: null
+                pickup_code: null
+                counter_number: null
+                approved_at: null
+                created_at: "2024-04-02T08:00:00"
+                updated_at: "2024-04-02T08:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /claims/{claim_id}:
+    get:
+      tags: [Claims]
+      summary: Get a claim by ID
+      description: Returns a single claim. Must be the claimant or admin.
+      parameters:
+        - $ref: '#/components/parameters/ClaimId'
+      responses:
+        '200':
+          description: Claim details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+              examples:
+                pending_claim:
+                  summary: Pending claim
+                  value:
+                    id: 1
+                    item_id: 1
+                    claimant_id: 2
+                    admin_id: null
+                    proof_details: This is my backpack. It has a red keychain attached.
+                    proof_image_url: "https://cdn.example.com/proofs/proof1.jpg"
+                    status: pending
+                    admin_note: null
+                    pickup_code: null
+                    counter_number: null
+                    approved_at: null
+                    created_at: "2024-04-02T08:00:00"
+                    updated_at: "2024-04-02T08:00:00"
+                approved_claim:
+                  summary: Approved claim (ready for pickup)
+                  value:
+                    id: 1
+                    item_id: 1
+                    claimant_id: 2
+                    admin_id: 10
+                    proof_details: This is my backpack. It has a red keychain attached.
+                    proof_image_url: "https://cdn.example.com/proofs/proof1.jpg"
+                    status: approved
+                    admin_note: Proof verified, item matches description
+                    pickup_code: "PICK-4521"
+                    counter_number: "C3"
+                    approved_at: "2024-04-03T10:00:00"
+                    created_at: "2024-04-02T08:00:00"
+                    updated_at: "2024-04-03T10:00:00"
+                rejected_claim:
+                  summary: Rejected claim
+                  value:
+                    id: 2
+                    item_id: 1
+                    claimant_id: 5
+                    admin_id: 10
+                    proof_details: I lost a blue backpack yesterday
+                    proof_image_url: null
+                    status: rejected
+                    admin_note: Insufficient proof provided
+                    pickup_code: null
+                    counter_number: null
+                    approved_at: null
+                    created_at: "2024-04-02T09:00:00"
+                    updated_at: "2024-04-03T10:30:00"
+                cancelled_claim:
+                  summary: Cancelled claim
+                  value:
+                    id: 3
+                    item_id: 2
+                    claimant_id: 6
+                    admin_id: null
+                    proof_details: This is my ID card.
+                    proof_image_url: null
+                    status: cancelled
+                    admin_note: null
+                    pickup_code: null
+                    counter_number: null
+                    approved_at: null
+                    created_at: "2024-04-03T07:00:00"
+                    updated_at: "2024-04-03T08:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Claims]
+      summary: Update a claim status
+      description: Approve, reject, or cancel a claim. Admin only.
+      parameters:
+        - $ref: '#/components/parameters/ClaimId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimUpdateRequest'
+            examples:
+              approve:
+                summary: Approve a claim
+                value:
+                  status: approved
+                  admin_note: Proof verified, item matches description
+                  pickup_code: "PICK-4521"
+                  counter_number: "C3"
+              reject:
+                summary: Reject a claim
+                value:
+                  status: rejected
+                  admin_note: Insufficient proof provided
+                  pickup_code: null
+                  counter_number: null
+              cancel:
+                summary: Cancel a claim
+                value:
+                  status: cancelled
+                  admin_note: Claimant requested cancellation
+                  pickup_code: null
+                  counter_number: null
+      responses:
+        '200':
+          description: Claim updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+              example:
+                id: 1
+                item_id: 1
+                claimant_id: 2
+                admin_id: 10
+                proof_details: This is my backpack. It has a red keychain attached.
+                proof_image_url: "https://cdn.example.com/proofs/proof1.jpg"
+                status: approved
+                admin_note: Proof verified, item matches description
+                pickup_code: "PICK-4521"
+                counter_number: "C3"
+                approved_at: "2024-04-03T10:00:00"
+                created_at: "2024-04-02T08:00:00"
+                updated_at: "2024-04-03T10:00:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Claims]
+      summary: Delete a claim
+      description: Delete a claim request. Must be the claimant or admin.
+      parameters:
+        - $ref: '#/components/parameters/ClaimId'
+      responses:
+        '204':
+          description: Claim deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # -------------------------------------- PICKUP LOGS -----------------------
+  # PICKUP LOGS
+  # ───────────────────────────────────────────────────────────── --- IGNORE ---
+  /pickups/:
+    get:
+      tags: [Pickup Logs]
+      summary: Get all pickup logs
+      description: Returns all item pickup records. Admin only.
+      responses:
+        '200':
+          description: List of pickup logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PickupLogResponse'
+              examples:
+                with_logs:
+                  summary: Existing pickup logs
+                  value:
+                    - id: 1
+                      claim_request_id: 1
+                      claimant_id: 2
+                      verified_by_admin_id: 10
+                      counter_number: "C3"
+                      pickup_code: "PICK-4521"
+                      picked_up_at: "2024-04-04T14:00:00"
+                      remarks: Item handed over without issues
+                      created_at: "2024-04-04T14:05:00"
+                    - id: 2
+                      claim_request_id: 3
+                      claimant_id: 7
+                      verified_by_admin_id: null
+                      counter_number: "C1"
+                      pickup_code: "PICK-7890"
+                      picked_up_at: "2024-04-05T11:00:00"
+                      remarks: null
+                      created_at: "2024-04-05T11:05:00"
+                empty:
+                  summary: No pickups yet
+                  value: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Pickup Logs]
+      summary: Log an item pickup
+      description: Record that a claimant has physically picked up the item. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PickupLogCreateRequest'
+            examples:
+              with_admin_and_remarks:
+                summary: Pickup verified by admin with remarks
+                value:
+                  claim_request_id: 1
+                  claimant_id: 2
+                  verified_by_admin_id: 10
+                  counter_number: "C3"
+                  pickup_code: "PICK-4521"
+                  picked_up_at: "2024-04-04T14:00:00"
+                  remarks: Item handed over without issues
+              minimal:
+                summary: Minimal pickup log
+                value:
+                  claim_request_id: 3
+                  claimant_id: 7
+                  verified_by_admin_id: null
+                  counter_number: null
+                  pickup_code: null
+                  picked_up_at: "2024-04-05T11:00:00"
+                  remarks: null
+      responses:
+        '201':
+          description: Pickup log created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupLogResponse'
+              example:
+                id: 1
+                claim_request_id: 1
+                claimant_id: 2
+                verified_by_admin_id: 10
+                counter_number: "C3"
+                pickup_code: "PICK-4521"
+                picked_up_at: "2024-04-04T14:00:00"
+                remarks: Item handed over without issues
+                created_at: "2024-04-04T14:05:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /pickups/{log_id}:
+    get:
+      tags: [Pickup Logs]
+      summary: Get a pickup log by ID
+      description: Returns a single pickup log record. Admin only.
+      parameters:
+        - $ref: '#/components/parameters/LogId'
+      responses:
+        '200':
+          description: Pickup log details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupLogResponse'
+              examples:
+                with_admin:
+                  summary: Log verified by admin
+                  value:
+                    id: 1
+                    claim_request_id: 1
+                    claimant_id: 2
+                    verified_by_admin_id: 10
+                    counter_number: "C3"
+                    pickup_code: "PICK-4521"
+                    picked_up_at: "2024-04-04T14:00:00"
+                    remarks: Item handed over without issues
+                    created_at: "2024-04-04T14:05:00"
+                without_admin:
+                  summary: Log without verifying admin or optional fields
+                  value:
+                    id: 2
+                    claim_request_id: 3
+                    claimant_id: 7
+                    verified_by_admin_id: null
+                    counter_number: null
+                    pickup_code: null
+                    picked_up_at: "2024-04-05T11:00:00"
+                    remarks: null
+                    created_at: "2024-04-05T11:05:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ------------------------------------------------------
+# COMPONENTS
+# -------------------------------------------------------
+components:
+
+  # ── SECURITY ────────────────────────────────
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from POST /users/login
+
+  # ── PARAMETERS ──────────────────────────────
+  parameters:
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      description: Unique ID of the user
+      schema:
+        type: integer
+        example: 1
+
+    ItemId:
+      name: item_id
+      in: path
+      required: true
+      description: Unique ID of the found item
+      schema:
+        type: integer
+        example: 1
+
+    ClaimId:
+      name: claim_id
+      in: path
+      required: true
+      description: Unique ID of the claim request
+      schema:
+        type: integer
+        example: 1
+
+    LogId:
+      name: log_id
+      in: path
+      required: true
+      description: Unique ID of the pickup log
+      schema:
+        type: integer
+        example: 1
+
+  # ── SCHEMAS ─────────────────────────────────
+  schemas:
+
+    # — Users —
+    UserCreateRequest:
+      type: object
+      required: [email, firstName, lastName, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: alice@university.fi
+        firstName:
+          type: string
+          example: Alice
+        lastName:
+          type: string
+          example: Mäkinen
+        password:
+          type: string
+          format: password
+          example: secret123
+        phone:
+          type: string
+          nullable: true
+          example: "+358401234567"
+
+    UserLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: alice@university.fi
+        password:
+          type: string
+          format: password
+          example: secret123
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: alice@university.fi
+        firstName:
+          type: string
+          example: Alice
+        lastName:
+          type: string
+          example: Mäkinen
+        phone:
+          type: string
+          nullable: true
+          example: "+358401234567"
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-04-01T10:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-04-01T10:00:00"
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxfQ.abc123
+
+    # — Found Items —
+    FoundItemCreateRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          example: Blue Backpack
+        description:
+          type: string
+          nullable: true
+          example: Found near the library entrance
+        category:
+          type: string
+          nullable: true
+          example: Bags
+        location_found:
+          type: string
+          nullable: true
+          example: Main Library
+        date_found:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-04-01T09:00:00"
+        image_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/images/backpack.jpg"
+
+    FoundItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Blue Backpack
+        description:
+          type: string
+          nullable: true
+          example: Found near the library entrance
+        category:
+          type: string
+          nullable: true
+          example: Bags
+        location_found:
+          type: string
+          nullable: true
+          example: Main Library
+        date_found:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-04-01T09:00:00"
+        image_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/images/backpack.jpg"
+        status:
+          type: string
+          enum: [available, claimed]
+          example: available
+        reported_by:
+          type: integer
+          example: 3
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-04-01T10:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-04-01T10:00:00"
+
+    # — Claims —
+    ClaimCreateRequest:
+      type: object
+      required: [proof_details]
+      properties:
+        proof_details:
+          type: string
+          example: This is my backpack. It has a red keychain attached.
+        proof_image_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/proofs/proof1.jpg"
+
+    ClaimUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled]
+          example: approved
+        admin_note:
+          type: string
+          nullable: true
+          example: Proof verified, item matches description
+        pickup_code:
+          type: string
+          nullable: true
+          example: "PICK-4521"
+        counter_number:
+          type: string
+          nullable: true
+          example: "C3"
+
+    ClaimResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        item_id:
+          type: integer
+          example: 1
+        claimant_id:
+          type: integer
+          example: 2
+        admin_id:
+          type: integer
+          nullable: true
+          example: 10
+        proof_details:
+          type: string
+          example: This is my backpack. It has a red keychain attached.
+        proof_image_url:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/proofs/proof1.jpg"
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled]
+          example: pending
+        admin_note:
+          type: string
+          nullable: true
+          example: null
+        pickup_code:
+          type: string
+          nullable: true
+          example: null
+        counter_number:
+          type: string
+          nullable: true
+          example: null
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-04-02T08:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-04-02T08:00:00"
+
+    # — Pickup Logs —
+    PickupLogCreateRequest:
+      type: object
+      required: [claim_request_id, claimant_id, picked_up_at]
+      properties:
+        claim_request_id:
+          type: integer
+          example: 1
+        claimant_id:
+          type: integer
+          example: 2
+        verified_by_admin_id:
+          type: integer
+          nullable: true
+          example: 10
+        counter_number:
+          type: string
+          nullable: true
+          example: "C3"
+        pickup_code:
+          type: string
+          nullable: true
+          example: "PICK-4521"
+        picked_up_at:
+          type: string
+          format: date-time
+          example: "2024-04-04T14:00:00"
+        remarks:
+          type: string
+          nullable: true
+          example: Item handed over without issues
+
+    PickupLogResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        claim_request_id:
+          type: integer
+          example: 1
+        claimant_id:
+          type: integer
+          example: 2
+        verified_by_admin_id:
+          type: integer
+          nullable: true
+          example: 10
+        counter_number:
+          type: string
+          nullable: true
+          example: "C3"
+        pickup_code:
+          type: string
+          nullable: true
+          example: "PICK-4521"
+        picked_up_at:
+          type: string
+          format: date-time
+          example: "2024-04-04T14:00:00"
+        remarks:
+          type: string
+          nullable: true
+          example: Item handed over without issues
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-04-04T14:05:00"
+
+    # — Errors —
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Resource not found
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  type: string
+                example: [body, email]
+              msg:
+                type: string
+                example: field required
+              type:
+                type: string
+                example: value_error.missing
+
+  # ── RESPONSES ───────────────────────────────
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Not authenticated
+
+    Forbidden:
+      description: Authenticated but not authorized to perform this action
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Forbidden
+
+    NotFound:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Item not found
+
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: Email already registered
+
+    ValidationError:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+          example:
+            detail:
+              - loc: [body, email]
+                msg: field required
+                type: value_error.missing
