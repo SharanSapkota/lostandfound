@@ -2,12 +2,12 @@ from app.repositories.user_repository import UserRepository
 from app.constant.error import AuthError
 from app.models.user import User
 
-import os
+from app.config import SECRET_KEY
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
 
-SECRET_KEY = os.environ.get("SECRET_TOKEN")
+
 
 class UserService:
     def __init__(self, repo: UserRepository):
