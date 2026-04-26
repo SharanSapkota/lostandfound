@@ -10,7 +10,7 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
 
 class UserLogin(BaseModel):
-    username: EmailStr
+    email: EmailStr
     password: str
 
 
